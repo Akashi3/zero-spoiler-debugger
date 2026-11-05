@@ -1,0 +1,7 @@
+{
+  "name": "zero-spoiler-debugger",
+  "version": "1.0.0",
+  "description": "ИИ-ментор для Tomorrow School: помогает найти баг, не показывая решение",
+  "type": "module",
+  "license": "MIT"
+}

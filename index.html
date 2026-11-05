@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zero-Spoiler Debugger</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f5f1;--surface:#fff;--ink:#1d2320;--muted:#66706a;--line:#dedcd3;--accent:#0f7a5a;--accent-ink:#fff;--hl:rgba(240,180,40,.28);--bot:#e9f3ee;--me:#efede6;--warn:#b4432b;
+--mono:ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;--sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#121614;--surface:#1a1f1c;--ink:#e8ece9;--muted:#8d9892;--line:#2c332f;--accent:#3ec79a;--accent-ink:#06261b;--hl:rgba(240,190,60,.22);--bot:#16271f;--me:#232824;--warn:#ef8d73}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#121614;--surface:#1a1f1c;--ink:#e8ece9;--muted:#8d9892;--line:#2c332f;--accent:#3ec79a;--accent-ink:#06261b;--hl:rgba(240,190,60,.22);--bot:#16271f;--me:#232824;--warn:#ef8d73}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans)}
+header{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.logo{font-weight:700;font-size:18px;letter-spacing:-.01em}.logo b{color:var(--accent)}
+.badge{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.badge.on{color:var(--accent);border-color:var(--accent)}
+.sp{flex:1}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px}
+button:hover{border-color:var(--accent)}
+button.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button:disabled{opacity:.5;cursor:default}
+main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;padding:16px 20px;max-width:1400px;margin:0 auto}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+h2{font-size:13px;margin:0;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+select,input[type=text],textarea.plain{font:inherit;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:8px 10px;width:100%}
+.ed{position:relative;border:1px solid var(--line);border-radius:8px;background:var(--bg);overflow:hidden}
+.gut{position:absolute;left:0;top:0;bottom:0;width:38px;padding:10px 0;text-align:right;color:var(--muted);font:13px/20px var(--mono);border-right:1px solid var(--line);overflow:hidden;user-select:none;z-index:2;background:var(--bg)}
+.gut div{padding-right:8px}.gut div.h{background:var(--hl);color:var(--ink);font-weight:700}
+#hls{position:absolute;left:38px;right:0;top:0;pointer-events:none}
+#hls div{position:absolute;left:0;right:0;height:20px;background:var(--hl);border-left:3px solid #e0a820}
+#code{position:relative;display:block;width:100%;height:340px;margin:0;border:0;outline:0;background:transparent;color:var(--ink);font:13px/20px var(--mono);padding:10px 10px 10px 48px;resize:vertical;white-space:pre;overflow:auto;tab-size:4}
+#chat{flex:1;min-height:340px;max-height:56vh;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-right:2px}
+.msg{padding:10px 12px;border-radius:10px;max-width:92%;white-space:pre-wrap;word-wrap:break-word}
+.msg.bot{background:var(--bot);align-self:flex-start}.msg.me{background:var(--me);align-self:flex-end}
+.msg.sys{align-self:center;color:var(--muted);font-size:13px;text-align:center;background:none}
+.msg small{display:block;color:var(--muted);margin-top:6px;font-size:12px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{font-size:12px;padding:2px 9px;border-radius:99px;background:var(--surface);border:1px solid var(--line)}
+.lvl{display:flex;gap:4px;align-items:center;font-size:12px;color:var(--muted)}
+.lvl i{width:22px;height:6px;border-radius:3px;background:var(--line);display:inline-block}.lvl i.f{background:var(--accent)}
+.dots span{display:inline-block;width:6px;height:6px;margin-right:3px;border-radius:50%;background:var(--muted);animation:b 1s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes b{50%{opacity:.2}}
+.note{font-size:12px;color:var(--muted)}
+.err{color:var(--warn)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Zero-Spoiler <b>Debugger</b></div>
+  <span class="badge on" id="shield">🛡 Zero-Spoiler Shield: активен</span>
+  <span class="sp"></span>
+  <span class="note">ИИ-ментор для Tomorrow School · P2P</span>
+</header>
+<main>
+  <section class="card">
+    <h2>1. Твой код и проблема</h2>
+    <div class="row">
+      <select id="lang" style="width:auto"><option>Python</option><option>JavaScript</option><option>Go</option><option>C / C++</option><option>Java</option><option>Другой</option></select>
+      <button id="ex">Загрузить пример с багом</button>
+      <button id="clr">Очистить</button>
+    </div>
+    <div class="ed"><div class="gut" id="gut"></div><div id="hls"></div>
+      <textarea id="code" spellcheck="false" placeholder="Вставь сюда свой код…"></textarea></div>
+    <input type="text" id="prob" placeholder="Что не так? Ожидал(а) … , а получаю … (ошибка, вывод)">
+    <button class="pri" id="start">Начать разбор</button>
+    <div class="note">Ментор не покажет исправленный код. Он будет задавать вопросы, подсвечивать, где смотреть, и предлагать эксперименты.</div>
+  </section>
+  <section class="card">
+    <h2>2. Диалог с ментором</h2>
+    <div class="lvl" id="lvl"></div>
+    <div id="chat"><div class="msg sys">Отправь код и описание проблемы — и начнём разбираться вместе.</div></div>
+    <div class="row">
+      <input type="text" id="inp" placeholder="Твоя мысль, гипотеза или ответ…" style="flex:1" disabled>
+      <button class="pri" id="send" disabled>Отправить</button>
+    </div>
+    <div class="row">
+      <button id="hint" disabled>Я застрял(а) — подсказку посильнее</button>
+      <button id="fin" disabled>Подвести итог</button>
+    </div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const code=$('code'),gut=$('gut'),hls=$('hls'),chat=$('chat');
+let history=[],level=1,busy=false,started=false,focus=[];
+
+const EXAMPLE=`def average(nums):
+    total = 0
+    for i in range(1, len(nums)):
+        total += nums[i]
+    return total / len(nums)
+
+scores = [80, 90, 100]
+print(average(scores))`;
+
+function renderGutter(){
+  const n=code.value.split('\n').length;
+  gut.innerHTML=Array.from({length:n},(_,i)=>`<div class="${focus.includes(i+1)?'h':''}">${i+1}</div>`).join('');
+  gut.scrollTop=code.scrollTop;
+  hls.innerHTML=focus.map(l=>`<div style="top:${10+(l-1)*20-code.scrollTop}px"></div>`).join('');
+}
+code.addEventListener('input',()=>{focus=[];renderGutter()});
+code.addEventListener('scroll',renderGutter);
+renderGutter();
+
+$('ex').onclick=()=>{code.value=EXAMPLE;$('lang').value='Python';$('prob').value='Ожидаю среднее 90, а программа печатает 63.33…';focus=[];renderGutter()};
+$('clr').onclick=()=>{code.value='';$('prob').value='';focus=[];renderGutter()};
+
+function setLevel(l){level=Math.max(1,Math.min(4,l));
+  const names=['','Наводящий вопрос','Где смотреть','Какая идея за этим','Узкая подсказка (без решения)'];
+  $('lvl').innerHTML='Уровень помощи: '+[1,2,3,4].map(i=>`<i class="${i<=level?'f':''}"></i>`).join('')+' <span>'+names[level]+'</span>'}
+setLevel(1);
+
+function add(cls,text){const d=document.createElement('div');d.className='msg '+cls;d.textContent=text;chat.append(d);chat.scrollTop=chat.scrollHeight;return d}
+function typing(){const d=document.createElement('div');d.className='msg bot';d.innerHTML='<span class="dots"><span></span><span></span><span></span></span>';chat.append(d);chat.scrollTop=chat.scrollHeight;return d}
+
+/* Клиентская часть Shield: только индикатор попытки обхода. Основная защита — на сервере (api/chat.js). */
+const BYPASS=/(ignore|forget|disregard|override|jailbreak|system prompt|developer mode|dan\b|игнорируй|забудь|отмени|сними ограничен|ты теперь|притворись|представь что ты|режим разработчика|системн\w+ промпт|напиши (весь )?(исправленн|готов|правильн)|дай (мне )?(готов|исправленн|ответ|решени)|покажи (правильн|исправленн|решени)|просто исправь|fix it for me|give me the (fixed|solution|answer)|write the (fixed|corrected))/i;
+
+async function turn(task,reqLevel,flag){
+  busy=true;toggle();const tp=typing();
+  try{
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({lang:$('lang').value,problem:$('prob').value,code:code.value,history,task,level:reqLevel,flag})});
+    const res=await r.json();
+    if(!r.ok)throw new Error(res.error||('HTTP '+r.status));
+    tp.remove();
+    const nLines=code.value.split('\n').length;
+    focus=(res.focus_lines||[]).map(Number).filter(n=>n>0&&n<=nLines);renderGutter();
+    const msg=add('bot',res.message||'…');
+    if(focus.length){const s=document.createElement('small');s.textContent='🔎 Посмотри на '+(focus.length>1?'строки ':'строку ')+focus.join(', ');msg.append(s)}
+    if((res.concepts||[]).length){const c=document.createElement('div');c.className='chips';
+      res.concepts.slice(0,3).forEach(t=>{const e=document.createElement('span');e.className='chip';e.textContent=t;c.append(e)});msg.append(c)}
+    if(res.shield_blocked){const s=document.createElement('small');s.textContent='🛡 Shield заблокировал ответ с кодом и подставил безопасный вопрос';msg.append(s)}
+    history.push({role:'bot',text:res.message});
+    setLevel(Number(res.level)||reqLevel);
+    if(res.student_progress==='solved')add('sys','🎉 Ты разобрался(лась) сам(а)! Нажми «Подвести итог», чтобы закрепить.');
+  }catch(e){tp.remove();add('sys','Ошибка: '+(e.message||'попробуй ещё раз'))}
+  busy=false;toggle();
+}
+function toggle(){const on=started&&!busy;['inp','send','hint','fin'].forEach(i=>$(i).disabled=!on);$('start').disabled=busy}
+
+$('start').onclick=async()=>{
+  if(!code.value.trim()||!$('prob').value.trim()){add('sys','Добавь код и опиши проблему.');return}
+  history=[];chat.innerHTML='';started=true;focus=[];renderGutter();setLevel(1);
+  add('sys','Разбор начат. Код передан ментору.');
+  await turn('first',1,false);$('inp').focus();
+};
+async function send(){
+  const t=$('inp').value.trim();if(!t||busy)return;$('inp').value='';
+  const flag=BYPASS.test(t);
+  add('me',t);history.push({role:'me',text:t});
+  if(flag){const s=$('shield');s.textContent='🛡 Shield: попытка обхода отклонена';s.style.color='var(--warn)';setTimeout(()=>{s.textContent='🛡 Zero-Spoiler Shield: активен';s.style.color=''},3500)}
+  await turn('reply',level,flag);
+}
+$('send').onclick=send;$('inp').addEventListener('keydown',e=>{if(e.key==='Enter')send()});
+$('hint').onclick=async()=>{if(busy)return;const nl=Math.min(4,level+1);add('me','Я застрял(а). Нужна подсказка посильнее.');history.push({role:'me',text:'Я застрял(а), нужна подсказка посильнее.'});await turn('hint',nl,false)};
+$('fin').onclick=async()=>{if(busy)return;await turn('summary',level,false)};
+toggle();
+</script>
+</body>
+</html>
