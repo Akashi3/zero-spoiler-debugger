@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Zero-Spoiler Debugger
 
 ИИ-ментор для студентов Tomorrow School (кейс 2, BRIDGERS STARTUP CHALLENGE).
