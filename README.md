@@ -4,8 +4,6 @@
 
 Проект для кейса 2 «Zero-Spoiler Debugger» · BRIDGERS STARTUP CHALLENGE 2026
 
-🔗 **Демо:** _вставь ссылку на Vercel_ · 👥 **Команда:** _название команды_
-
 ---
 
 ## Проблема
